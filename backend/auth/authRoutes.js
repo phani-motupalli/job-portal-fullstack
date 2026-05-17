@@ -1,16 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const { register, login, getProfile } = require("./authController");
 
-router.post("/register", (req, res) => {
-  res.json({ message: "Register route - Day 2" });
-});
+// POST /api/auth/register
+router.post("/register", register);
 
-router.post("/login", (req, res) => {
-  res.json({ message: "Login route - Day 2" });
-});
+// POST /api/auth/login
+router.post("/login", login);
 
-router.get("/profile", (req, res) => {
-  res.json({ message: "Profile route - Day 3" });
-});
+// GET /api/auth/profile (protected - Day 3)
+router.get("/profile", getProfile);
 
 module.exports = router;
