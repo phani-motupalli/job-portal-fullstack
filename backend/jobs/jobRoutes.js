@@ -1,24 +1,26 @@
 const express = require("express");
 const router = express.Router();
+const {
+  getJobs,
+  createJob,
+  getJobById,
+  applyToJob,
+  getApplications,
+} = require("./jobController");
 
-router.get("/", (req, res) => {
-  res.json({ message: "Get jobs - Person B Day 2" });
-});
+// GET /api/jobs — public
+router.get("/", getJobs);
 
-router.post("/create", (req, res) => {
-  res.json({ message: "Create job - Person B Day 2" });
-});
+// POST /api/jobs/create — protected (Day 3 we add protection)
+router.post("/create", createJob);
 
-router.get("/applications", (req, res) => {
-  res.json({ message: "Get applications - Person B Day 3" });
-});
+// GET /api/jobs/applications — protected (Day 3 we add protection)
+router.get("/applications", getApplications);
 
-router.get("/:id", (req, res) => {
-  res.json({ message: "Get job by ID - Person B Day 3" });
-});
+// GET /api/jobs/:id — public
+router.get("/:id", getJobById);
 
-router.post("/apply", (req, res) => {
-  res.json({ message: "Apply to job - Person B Day 3" });
-});
+// POST /api/jobs/apply — protected (Day 3 we add protection)
+router.post("/apply", applyToJob);
 
 module.exports = router;
