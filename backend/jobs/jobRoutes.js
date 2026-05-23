@@ -7,20 +7,21 @@ const {
   applyToJob,
   getApplications,
 } = require("./jobController");
+const protect = require("../middleware/authMiddleware");
 
 // GET /api/jobs — public
 router.get("/", getJobs);
 
-// POST /api/jobs/create — protected (Day 3 we add protection)
-router.post("/create", createJob);
+// POST /api/jobs/create — protected
+router.post("/create", protect, createJob);
 
-// GET /api/jobs/applications — protected (Day 3 we add protection)
-router.get("/applications", getApplications);
+// GET /api/jobs/applications — protected
+router.get("/applications", protect, getApplications);
 
 // GET /api/jobs/:id — public
 router.get("/:id", getJobById);
 
-// POST /api/jobs/apply — protected (Day 3 we add protection)
-router.post("/apply", applyToJob);
+// POST /api/jobs/apply — protected
+router.post("/apply", protect, applyToJob);
 
 module.exports = router;
