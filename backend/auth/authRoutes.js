@@ -1,16 +1,15 @@
 const express = require("express");
 const router = express.Router();
+const { register, login, getProfile } = require("./authController");
+const protect = require("../middleware/authMiddleware");
 
-router.post("/register", (req, res) => {
-  res.json({ message: "Register route - Day 2" });
-});
+// POST /api/auth/register — public
+router.post("/register", register);
 
-router.post("/login", (req, res) => {
-  res.json({ message: "Login route - Day 2" });
-});
+// POST /api/auth/login — public
+router.post("/login", login);
 
-router.get("/profile", (req, res) => {
-  res.json({ message: "Profile route - Day 3" });
-});
+// GET /api/auth/profile — protected (must be logged in)
+router.get("/profile", protect, getProfile);
 
 module.exports = router;
