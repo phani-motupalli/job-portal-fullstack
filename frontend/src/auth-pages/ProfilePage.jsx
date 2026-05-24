@@ -27,10 +27,10 @@ function ProfilePage() {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  navigate("/");
+};
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

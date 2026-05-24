@@ -6,10 +6,10 @@ function Navbar() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  navigate("/");
+};
 
   return (
     <nav className="bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
@@ -21,6 +21,9 @@ function Navbar() {
           <>
             <Link to="/" className="hover:underline">Jobs</Link>
             <Link to="/dashboard" className="hover:underline">Dashboard</Link>
+            {user.role === "recruiter" && (
+            <Link to="/post-job" className="hover:underline">Post Job</Link>
+            )}
             <Link to="/profile" className="hover:underline">{user.name}</Link>
             <button
               onClick={handleLogout}
