@@ -16,7 +16,7 @@ function DashboardPage() {
         return;
       }
       try {
-        const response = await fetch("https://job-portal-fullstack-wpsm.onrender.com/api/jobs/applications", {
+        const response = await fetch("https://job-portal-fullstack-pr5j.onrender.com/api/jobs/applications", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();

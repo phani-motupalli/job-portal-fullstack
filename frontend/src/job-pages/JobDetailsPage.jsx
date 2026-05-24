@@ -14,7 +14,7 @@ function JobDetailsPage() {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const response = await fetch(`https://job-portal-fullstack-wpsm.onrender.com/api/jobs/${id}`);
+        const response = await fetch(`https://job-portal-fullstack-pr5j.onrender.com/api/jobs/${id}`);
         const data = await response.json();
         setJob(data);
       } catch (err) {
@@ -33,7 +33,7 @@ function JobDetailsPage() {
     }
     setApplying(true);
     try {
-      const response = await fetch("https://job-portal-fullstack-wpsm.onrender.com/api/jobs/apply", {
+      const response = await fetch("https://job-portal-fullstack-pr5j.onrender.com/api/jobs/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

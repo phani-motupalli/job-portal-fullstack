@@ -39,7 +39,7 @@ function PostJobPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("https://job-portal-fullstack-wpsm.onrender.com/api/jobs/create", {
+      const response = await fetch("https://job-portal-fullstack-pr5j.onrender.com/api/jobs/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

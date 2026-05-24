@@ -13,7 +13,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build"
   },
-  "proxy": "https://job-portal-fullstack-wpsm.onrender.com",
+  "proxy": "https://job-portal-fullstack-pr5j.onrender.com",
   "browserslist": {
     "production": [
       ">0.2%",

@@ -15,7 +15,7 @@ function RecruiterDashboardPage() {
     const fetchMyJobs = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("https://job-portal-fullstack-wpsm.onrender.com/api/jobs/myjobs", {
+        const response = await fetch("https://job-portal-fullstack-pr5j.onrender.com/api/jobs/myjobs", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
