@@ -12,7 +12,7 @@ function ProfilePage() {
       const token = localStorage.getItem("token");
       if (!token) { navigate("/login"); return; }
       try {
-        const response = await fetch("http://localhost:5000/api/auth/profile", {
+        const response = await fetch("https://job-portal-fullstack-wpsm.onrender.com/api/auth/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
