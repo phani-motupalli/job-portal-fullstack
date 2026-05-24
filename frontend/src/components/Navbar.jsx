@@ -20,7 +20,12 @@ function Navbar() {
         {user ? (
           <>
             <Link to="/" className="hover:underline">Jobs</Link>
-            <Link to="/dashboard" className="hover:underline">Dashboard</Link>
+            <Link 
+  to={user?.role === "recruiter" ? "/recruiter-dashboard" : "/dashboard"} 
+  className="hover:underline"
+>
+  Dashboard
+</Link>
             {user.role === "recruiter" && (
             <Link to="/post-job" className="hover:underline">Post Job</Link>
             )}

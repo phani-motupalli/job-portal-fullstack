@@ -9,6 +9,7 @@ import DashboardPage from "./job-pages/DashboardPage";
 import PostJobPage from "./job-pages/PostJobPage";
 import LandingPage from "./pages/LandingPage";
 import Navbar from "./components/Navbar";
+import RecruiterDashboardPage from "./job-pages/RecruiterDashboardPage";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/post-job" element={<PostJobPage />} />
+        <Route path="/recruiter-dashboard" element={<RecruiterDashboardPage />} />
       </Routes>
     </Router>
   );
