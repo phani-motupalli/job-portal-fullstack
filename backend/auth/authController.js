@@ -11,31 +11,35 @@ const generateToken = (userId) => {
 // ── REGISTER ──────────────────────────────────────────────────────
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, skills, headline } = req.body;
 
-    // Check if all fields are provided
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "Please fill all fields" });
+      return res.status(400).json({ message: "Please fill all required fields" });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // Create new user
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || "student",
+      skills: Array.isArray(skills) ? skills : [],
+      headline: headline || "",
+    });
 
-    // Send response with token
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      headline: user.headline,
+      skills: user.skills,
       token: generateToken(user._id),
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -46,42 +50,37 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if all fields are provided
     if (!email || !password) {
       return res.status(400).json({ message: "Please fill all fields" });
     }
 
-    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // Send response with token
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      headline: user.headline,
+      bio: user.bio,
+      skills: user.skills,
+      experience: user.experience,
+      education: user.education,
+      portfolio: user.portfolio,
+      github: user.github,
+      linkedin: user.linkedin,
+      resumeText: user.resumeText,
+      savedJobs: user.savedJobs || [],
       token: generateToken(user._id),
     });
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// ── GET PROFILE ───────────────────────────────────────────────────
-exports.getProfile = async (req, res) => {
-  try {
-    // Day 3 - req.user will come from JWT middleware
-    res.json({ message: "Profile route - Day 3" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -91,7 +90,93 @@ exports.getProfile = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── UPDATE PROFILE ────────────────────────────────────────────────
+exports.updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const {
+      name,
+      headline,
+      bio,
+      skills,
+      experience,
+      education,
+      portfolio,
+      github,
+      linkedin,
+      resumeText,
+    } = req.body;
+
+    if (name) user.name = name;
+    if (headline !== undefined) user.headline = headline;
+    if (bio !== undefined) user.bio = bio;
+    if (skills !== undefined) {
+      user.skills = Array.isArray(skills)
+        ? skills.map((s) => s.trim()).filter(Boolean)
+        : typeof skills === "string"
+        ? skills.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+    }
+    if (experience !== undefined) user.experience = experience;
+    if (education !== undefined) user.education = education;
+    if (portfolio !== undefined) user.portfolio = portfolio;
+    if (github !== undefined) user.github = github;
+    if (linkedin !== undefined) user.linkedin = linkedin;
+    if (resumeText !== undefined) user.resumeText = resumeText;
+
+    const updatedUser = await user.save();
+    const userResponse = updatedUser.toObject();
+    delete userResponse.password;
+
+    res.json(userResponse);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── TOGGLE SAVE JOB ───────────────────────────────────────────────
+exports.toggleSaveJob = async (req, res) => {
+  try {
+    const { jobId } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const index = user.savedJobs.indexOf(jobId);
+    let isSaved = false;
+    if (index === -1) {
+      user.savedJobs.push(jobId);
+      isSaved = true;
+    } else {
+      user.savedJobs.splice(index, 1);
+      isSaved = false;
+    }
+
+    await user.save();
+    res.json({ isSaved, savedJobs: user.savedJobs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── GET SAVED JOBS ────────────────────────────────────────────────
+exports.getSavedJobs = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate("savedJobs");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user.savedJobs || []);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

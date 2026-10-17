@@ -6,10 +6,8 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors({ 
-  origin: [
-    "http://localhost:3000",
-    "https://job-portal-fullstack-ochre.vercel.app"
-  ] 
+  origin: true,
+  credentials: true
 }));
 app.use(express.json());
 

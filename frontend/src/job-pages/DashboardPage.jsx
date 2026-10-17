@@ -1,189 +1,315 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getApplications, getSavedJobs } from "../services/api";
+import {
+  IconSparkles,
+  IconBookmark,
+  IconBrain,
+  IconChevronRight,
+} from "../components/Icons";
+
+const PIPELINE_COLUMNS = [
+  { id: "pending", label: "Applied", icon: "📋", color: "border-slate-300 bg-slate-50 text-slate-700" },
+  { id: "reviewing", label: "Reviewing", icon: "🔍", color: "border-indigo-300 bg-indigo-50 text-indigo-700" },
+  { id: "shortlisted", label: "Shortlisted", icon: "⭐", color: "border-purple-300 bg-purple-50 text-purple-700" },
+  { id: "interviewing", label: "Interviewing", icon: "💬", color: "border-teal-300 bg-teal-50 text-teal-700" },
+  { id: "accepted", label: "Offered 🎉", icon: "🏆", color: "border-emerald-300 bg-emerald-50 text-emerald-700" },
+  { id: "rejected", label: "Archived", icon: "✕", color: "border-rose-200 bg-rose-50 text-rose-700" },
+];
 
 function DashboardPage() {
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user } = useAuth();
+  const [applications, setApplications] = useState([]);
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("pipeline"); // pipeline, saved
 
   useEffect(() => {
-    const fetchApplications = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      try {
-        const response = await fetch("https://job-portal-fullstack-pr5j.onrender.com/api/jobs/applications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          setError(data.message);
-        } else {
-          setApplications(data);
-        }
-      } catch (err) {
-        setError("Something went wrong.");
-      }
-      setLoading(false);
-    };
-    fetchApplications();
-  }, [navigate]);
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "accepted": return "bg-green-100 text-green-700";
-      case "rejected": return "bg-red-100 text-red-700";
-      default: return "bg-yellow-100 text-yellow-700";
+    if (!user) {
+      navigate("/login");
+      return;
     }
+    loadData();
+  }, [user]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [appRes, savedRes] = await Promise.all([
+        getApplications(),
+        getSavedJobs().catch(() => ({ data: [] })),
+      ]);
+      setApplications(appRes.data || []);
+      setSavedJobs(savedRes.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "accepted": return "✅";
-      case "rejected": return "❌";
-      default: return "⏳";
-    }
+  // Profile readiness score
+  const calculateProfileStrength = () => {
+    let score = 20; // base account
+    if (user?.headline) score += 15;
+    if (user?.skills && user.skills.length >= 3) score += 25;
+    if (user?.resumeText && user.resumeText.length > 50) score += 25;
+    if (user?.github || user?.linkedin || user?.portfolio) score += 15;
+    return Math.min(100, score);
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="flex flex-col items-center gap-3">
-        <svg className="animate-spin h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-        </svg>
-        <p className="text-gray-500">Loading your dashboard...</p>
+  const profileStrength = calculateProfileStrength();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-slate-500 font-semibold text-sm">Loading your applications pipeline...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
-
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 rounded-2xl p-8 mb-8 relative overflow-hidden">
-          <div className="absolute top-[-40px] right-[-40px] w-48 h-48 bg-white opacity-10 rounded-full"/>
-          <div className="absolute bottom-[-20px] left-20 w-24 h-24 bg-white opacity-10 rounded-full"/>
-          <div className="relative z-10">
-            <h1 className="text-3xl font-bold text-white mb-1">
-              My Dashboard 👋
-            </h1>
-            <p className="text-indigo-200">
-              Welcome back, <span className="font-semibold text-white">{user?.name}</span>!
-              Track all your job applications here.
-            </p>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {[
-            {
-              label: "Total Applied",
-              value: applications.length,
-              icon: "📋",
-              color: "bg-indigo-50 text-indigo-600",
-            },
-            {
-              label: "Accepted",
-              value: applications.filter((a) => a.status === "accepted").length,
-              icon: "✅",
-              color: "bg-green-50 text-green-600",
-            },
-            {
-              label: "Pending",
-              value: applications.filter((a) => a.status === "pending").length,
-              icon: "⏳",
-              color: "bg-yellow-50 text-yellow-600",
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-2xl shadow-md p-6 text-center">
-              <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center text-2xl mx-auto mb-3`}>
-                {stat.icon}
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Profile Banner */}
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white mb-8 shadow-xl relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-2xl flex items-center justify-center shadow-lg border border-white/20">
+                {user?.name?.charAt(0).toUpperCase()}
               </div>
-              <div className="text-3xl font-bold text-gray-800">{stat.value}</div>
-              <div className="text-gray-500 text-sm mt-1">{stat.label}</div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold">
+                  Welcome, {user?.name} 👋
+                </h1>
+                <p className="text-indigo-200 text-xs sm:text-sm mt-0.5">
+                  {user?.headline || "Tech Candidate • Applications Command Center"}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(user?.skills || []).slice(0, 5).map((s, idx) => (
+                    <span key={idx} className="bg-white/10 text-teal-300 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-white/10">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Applications List */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <span className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </span>
-              My Applications
-            </h2>
-            <Link
-              to="/"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:from-indigo-700 hover:to-purple-700 transition"
-            >
-              Browse More Jobs
-            </Link>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-6">
-              {error}
-            </div>
-          )}
-
-          {applications.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">📭</div>
-              <h3 className="text-xl font-bold text-gray-700 mb-2">No applications yet</h3>
-              <p className="text-gray-500 mb-6">Start applying to jobs to track them here</p>
+            {/* Profile Strength Widget */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 min-w-[240px]">
+              <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                <span className="text-indigo-200">Profile Readiness</span>
+                <span className="text-teal-300 font-black">{profileStrength}%</span>
+              </div>
+              <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-teal-400 to-indigo-400 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${profileStrength}%` }}
+                />
+              </div>
               <Link
-                to="/"
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition"
+                to="/profile"
+                className="text-[11px] font-bold text-teal-300 hover:text-white mt-2 block transition"
               >
-                Browse Jobs →
+                + Complete Skills & ATS Resume →
               </Link>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {applications.map((app) => (
-                <div key={app._id} className="flex items-center justify-between p-5 bg-gray-50 rounded-xl hover:bg-indigo-50 transition border border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
-                      {app.jobId?.company?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800">{app.jobId?.title}</h3>
-                      <p className="text-gray-500 text-sm">{app.jobId?.company} • {app.jobId?.location}</p>
-                      <p className="text-gray-400 text-xs mt-1">
-                        Applied on {new Date(app.createdAt).toLocaleDateString("en-US", {
-                          month: "long", day: "numeric", year: "numeric"
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(app.status)}`}>
-                      {getStatusIcon(app.status)} {app.status?.charAt(0).toUpperCase() + app.status?.slice(1)}
-                    </span>
-                    <Link
-                      to={`/jobs/${app.jobId?._id}`}
-                      className="text-indigo-600 hover:underline text-sm font-medium"
-                    >
-                      View →
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
 
+        {/* Tab Controls */}
+        <div className="flex items-center justify-between border-b border-slate-200 mb-6 pb-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab("pipeline")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition ${
+                activeTab === "pipeline"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-100"
+              }`}
+            >
+              <span>Application Pipeline ({applications.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("saved")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition ${
+                activeTab === "saved"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-100"
+              }`}
+            >
+              <IconBookmark className="w-4 h-4" />
+              <span>Saved Bookmarks ({savedJobs.length})</span>
+            </button>
+          </div>
+
+          <Link
+            to="/jobs"
+            className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
+          >
+            <span>Browse More Roles</span>
+            <IconChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* ── KANBAN PIPELINE VIEW ─────────────────────────────────── */}
+        {activeTab === "pipeline" && (
+          <div>
+            {applications.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300 max-w-lg mx-auto">
+                <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                  🚀
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-1">No Applications Yet</h3>
+                <p className="text-xs text-slate-500 mb-6">
+                  Explore job openings, calculate your SkillMatch score, and submit 1-click applications.
+                </p>
+                <Link
+                  to="/jobs"
+                  className="bg-indigo-600 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:bg-indigo-700"
+                >
+                  Explore Job Openings
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                {PIPELINE_COLUMNS.map((col) => {
+                  const colApps = applications.filter((a) => {
+                    if (col.id === "pending") return !a.status || a.status === "pending";
+                    return a.status === col.id;
+                  });
+
+                  return (
+                    <div
+                      key={col.id}
+                      className="bg-slate-100/70 rounded-2xl p-3.5 border border-slate-200/80 flex flex-col min-h-[420px]"
+                    >
+                      {/* Column Header */}
+                      <div className="flex items-center justify-between mb-3 px-1">
+                        <div className="flex items-center gap-1.5 font-extrabold text-xs text-slate-700">
+                          <span>{col.icon}</span>
+                          <span>{col.label}</span>
+                        </div>
+                        <span className="w-5 h-5 rounded-full bg-white text-slate-700 font-black text-[11px] flex items-center justify-center shadow-sm">
+                          {colApps.length}
+                        </span>
+                      </div>
+
+                      {/* Cards List in this stage */}
+                      <div className="space-y-3 flex-1">
+                        {colApps.map((app) => (
+                          <div
+                            key={app._id}
+                            className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 hover:shadow-md transition text-left flex flex-col justify-between"
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                  {app.jobId?.company || "Company"}
+                                </span>
+                                {app.matchScore > 0 && (
+                                  <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                                    {app.matchScore}% Match
+                                  </span>
+                                )}
+                              </div>
+
+                              <h4 className="font-bold text-xs text-slate-900 leading-tight line-clamp-1 mb-1">
+                                {app.jobId?.title || "Role"}
+                              </h4>
+                              <p className="text-[11px] text-slate-500 mb-2">
+                                📍 {app.jobId?.location || "India"}
+                              </p>
+
+                              {/* Recruiter feedback notes if available */}
+                              {app.recruiterNotes && (
+                                <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-[10px] text-amber-800 font-medium mb-2">
+                                  💬 Recruiter note: {app.recruiterNotes}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1 mt-2">
+                              <span className="text-[10px] text-slate-400">
+                                {new Date(app.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                              {app.jobId?._id && (
+                                <Link
+                                  to={`/jobs/${app.jobId._id}`}
+                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5"
+                                >
+                                  <IconBrain className="w-3 h-3" />
+                                  <span>Prep Room</span>
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SAVED BOOKMARKS TAB ──────────────────────────────────── */}
+        {activeTab === "saved" && (
+          <div>
+            {savedJobs.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300 max-w-lg mx-auto">
+                <div className="w-16 h-16 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                  🔖
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-1">No Saved Jobs</h3>
+                <p className="text-xs text-slate-500 mb-6">
+                  Bookmark exciting jobs while browsing to save them for later applications.
+                </p>
+                <Link
+                  to="/jobs"
+                  className="bg-indigo-600 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:bg-indigo-700"
+                >
+                  Explore Openings
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {savedJobs.map((job) => (
+                  <div
+                    key={job._id}
+                    className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-xs font-bold text-slate-500">{job.company}</span>
+                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                          {job.jobType || "Full Time"}
+                        </span>
+                      </div>
+                      <h3 className="font-extrabold text-base text-slate-900 mb-1">{job.title}</h3>
+                      <p className="text-xs text-slate-500 mb-4 line-clamp-2">{job.description}</p>
+                      <div className="flex items-center gap-3 text-xs font-semibold text-slate-600 mb-4">
+                        <span>📍 {job.location}</span>
+                        <span>💰 {job.salary}</span>
+                      </div>
+                    </div>
+                    <Link
+                      to={`/jobs/${job._id}`}
+                      className="w-full text-center py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-sm"
+                    >
+                      View & Apply →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

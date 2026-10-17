@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { registerUser } from "../services/api";
 
 function RegisterPage() {
   const [name, setName] = useState("");
@@ -10,27 +12,22 @@ function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const response = await fetch("https://job-portal-fullstack-pr5j.onrender.com/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.message);
+      const response = await registerUser({ name, email, password, role });
+      login(response.data);
+      if (response.data.role === "recruiter") {
+        navigate("/recruiter-dashboard");
       } else {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data));
-        navigate("/");
+        navigate("/profile");
       }
     } catch (err) {
-      setError("Something went wrong. Try again.");
+      setError(err.response?.data?.message || "Registration failed. Try again.");
     }
     setLoading(false);
   };
